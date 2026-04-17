@@ -6,12 +6,72 @@
   <title>Weather Alerts App</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <h1>Weather Alerts App</h1>
-  <input type="text" id="state-input" placeholder="Enter state abbreviation">
-  <button id="fetch-alerts">Get Weather Alerts</button>
+<body style="background-color: lightgray;">
+  <h1 style="font-size: 24px;">Weather Alerts App</h1>
+  <input style="font-size: larger;" 
+  type="text" id="state-input" 
+  placeholder="Enter state abbreviation">
+  <button style="font-size: larger;" id="fetch-alerts">Get Weather Alerts</button>
   <div id="alerts-display"></div>
   <div id="error-message" class="hidden"></div>
-  <script src="./index.js"></script>
-</body>
-</html>
+  <script>
+  function fetchWeatherAlerts(state) {
+    const url = `https://api.weather.gov/alerts/active?area=${state}`;
+    return fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error fetching alerts: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => data.features)
+      .catch(error => {
+        console.error('Error:', error);
+        throw error;
+      });
+  }
+  </script>
+  <script>
+  document.getElementById('fetch-alerts').addEventListener('click', () => {
+    const state = document.getElementById('state-input').value.trim().toUpperCase();
+    const errorMessageDiv = document.getElementById('error-message');
+    const alertsDisplayDiv = document.getElementById('alerts-display');
+    
+    // Clear previous results and errors
+    errorMessageDiv.classList.add('hidden');
+    errorMessageDiv.textContent = '';
+    alertsDisplayDiv.innerHTML = '';
+
+    if (!state) {
+      errorMessageDiv.textContent = 'Please enter a state abbreviation.';
+      errorMessageDiv.classList.remove('hidden');
+      return;
+    }
+
+    fetchWeatherAlerts(state)
+      .then(alerts => {
+        if (!alerts || alerts.length === 0) {
+          alertsDisplayDiv.textContent = 'No active weather alerts for this state.';
+          return;
+        }
+        alerts.forEach(alert => {
+          const alertElement = document.createElement('div');
+          alertElement.classList.add('alert');
+          alertElement.innerHTML = `
+            <h3>${alert.properties.headline}</h3>
+            <p>${alert.properties.description}</p>
+            <p><strong>Effective:</strong> ${new Date(alert.properties.effective).toLocaleString()}</p>
+            <p><strong>Expires:</strong> ${new Date(alert.properties.expires).toLocaleString()}</p>
+          `;
+          alertsDisplayDiv.appendChild(alertElement);
+        });
+      })
+      .catch(error => {
+        errorMessageDiv.textContent = 'Failed to fetch weather alerts. Please try again later.';
+        errorMessageDiv.classList.remove('hidden');
+      });
+  });
+  </script>
+
+</body> 
+ </html>
